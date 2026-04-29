@@ -1,7 +1,9 @@
 import 'package:chatter_matter_app/firebase_options.dart';
+import 'package:chatter_matter_app/presentation/home/home_view.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'application/firebase/notification_service.dart';
 import 'application/user/auth_bloc.dart';
 import 'env.dart';
@@ -18,6 +20,8 @@ void main() async {
 
   // Initialize Mobile Ads
   await MobileAds.instance.initialize();
+
+  await PurchasesApi.init();
 
   // Initialize notifications
   final notification = NotificationService();

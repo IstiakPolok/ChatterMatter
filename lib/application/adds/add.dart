@@ -5,8 +5,8 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 // if (Platform.isAndroid)
 BannerAd myBanner = BannerAd(
   adUnitId: Platform.isAndroid
-      ? 'ca-app-pub-5937945188391331/6162204072'
-      : "ca-app-pub-5937945188391331/1991459547", // your banner ad unit ID
+      ? 'ca-app-pub-3940256099942544/6300978111'
+      : "ca-app-pub-3940256099942544/2934735716", // your banner ad unit ID
   size: AdSize.largeBanner,
   request: AdRequest(),
   listener: BannerAdListener(

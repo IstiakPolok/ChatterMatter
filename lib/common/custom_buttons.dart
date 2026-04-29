@@ -12,7 +12,6 @@ customFilledButton({
   return FilledButton(
     style: FilledButton.styleFrom(
       backgroundColor: customDarkPurple,
-      minimumSize: Size(width, 50),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(defaultRadius),
       ),

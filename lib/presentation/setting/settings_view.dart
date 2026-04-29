@@ -4,6 +4,7 @@ import 'package:chatter_matter_app/common/custom_buttons.dart';
 import 'package:chatter_matter_app/common/custom_text_style.dart';
 import 'package:chatter_matter_app/common/navigator.dart';
 import 'package:chatter_matter_app/common/padding.dart';
+import 'package:chatter_matter_app/presentation/subsription/inapsubs.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -114,7 +115,7 @@ class SettingsView extends StatelessWidget {
 
                         InkWell(
                           onTap: () =>
-                              animatedNavigateTo(context, SubscriptionView()),
+                              animatedNavigateTo(context, SubscriptionView1()),
                           child: Container(
                             height: 60,
                             padding: EdgeInsets.symmetric(horizontal: 8),

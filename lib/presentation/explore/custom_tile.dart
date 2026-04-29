@@ -61,7 +61,7 @@ customTile({required Category category, required bool isSelected}) {
                     color: customWhite,
                   ),
                   child: Text(
-                    "10 questions",
+                    category.questionCount.toString(),
                     style: bodyMedium(color: customDarkPurple),
                   ),
                 ),

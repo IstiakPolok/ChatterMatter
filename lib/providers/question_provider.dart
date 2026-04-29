@@ -20,13 +20,20 @@ class QuestionProvider extends ChangeNotifier {
     getQuestion();
   }
 
-  void resetPaginator() async {
+  Future<void> resetPaginator() async {
     _questionPaginator = null;
     questionList = [];
-    getQuestion();
+    notifyListeners();
+    await getQuestion();
   }
 
-  void getQuestion() async {
+  Future<void> ensureMinimumQuestions(int minCount) async {
+    while (questionList.length < minCount && !reachEnd) {
+      await getQuestion();
+    }
+  }
+
+  Future<void> getQuestion() async {
     if (_questionPaginator == null) {
       isLoading = true;
     } else {
@@ -36,6 +43,7 @@ class QuestionProvider extends ChangeNotifier {
       reachEnd = true;
       isLoading = false;
       isPaginating = false;
+      notifyListeners();
       return;
     }
     notifyListeners();

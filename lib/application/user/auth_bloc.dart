@@ -33,19 +33,32 @@ class UserBloc extends ChangeNotifier {
     // await fetchProfile();
   }
 
+
+  void updatesubscription(SubscriptionType type) {
+  if (profile == null) return;
+
+  // profile!.subscriptionType = type;
+  profile=profile!.copyWith(subscriptionType :type);
+
+  debugPrint("Subscription updated to: $type");
+
+  notifyListeners(); // 🔥 This rebuilds HomeView instantly
+}
+
   Future<bool> retrieveUser() async {
     try {
       final data = FirebaseAuth.instance.currentUser;
 
+      profile = null;
       final check = await fetchProfile();
       if (data != null && check != null) {
-        user = user;
+        user = data;
         notifyListeners();
         return true;
       } else {
         user = null;
         profile = null;
-        logout();
+        await logout();
         notifyListeners();
         return false;
       }
@@ -94,9 +107,14 @@ class UserBloc extends ChangeNotifier {
 
   Future<AppUser?> fetchProfile() async {
     isLoadingProfile = true;
+    profile = null;
     notifyListeners();
     final (data, error) = await _authRepo.getProfile();
-    profile = data;
+    if (data != null) {
+      profile = data;
+    } else {
+      profile = null;
+    }
     isLoadingProfile = false;
     notifyListeners();
     return data;
@@ -148,8 +166,11 @@ class UserBloc extends ChangeNotifier {
     }
   }
 
-  void logout() {
-    _authRepo.logout();
+  Future<void> logout() async {
+    await _authRepo.logout();
+    user = null;
+    profile = null;
+    notifyListeners();
   }
 
   Future<Attempt<String>> deleteAccount(String val) async {
