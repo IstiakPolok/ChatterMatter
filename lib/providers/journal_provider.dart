@@ -43,7 +43,11 @@ class JournalProvider extends ChangeNotifier {
     final (data, error) = await _journalRepo.getJournals();
 
     if (data != null) {
+      debugPrint('JournalProvider: Successfully fetched journals. Response Body JSON: ${data.toJson()}');
       journalList.addAll(data.data);
+      debugPrint('JournalProvider: Successfully fetched ${data.data.length} journals. Total list size is now: ${journalList.length}');
+    } else {
+      debugPrint('JournalProvider: Failed to fetch journals. Error: ${error?.title ?? "Unknown error"}');
     }
 
     isLoading = false;
@@ -87,12 +91,17 @@ class JournalProvider extends ChangeNotifier {
   }
 
   Future<bool?> deleteJournal({required String journalId}) async {
+    debugPrint('JournalProvider: Deleting journal with ID: $journalId');
     notifyListeners();
 
     final (data, error) = await _journalRepo.deleteJournal(journalId);
 
     if (data != null) {
+      final oldLength = journalList.length;
       journalList.removeWhere((t) => t.id == journalId);
+      debugPrint('JournalProvider: Delete successful. Old list length: $oldLength, New list length: ${journalList.length}');
+    } else {
+      debugPrint('JournalProvider: Delete failed. Error: ${error?.title ?? "Unknown error"}');
     }
 
     addingJournal = false;

@@ -68,7 +68,8 @@ class QuestionRepo {
 
       final token = await user.getIdToken(true);
 
-      final url = Uri.parse('$baseUrl/getQuestionPaginator').replace(
+      // final url = Uri.parse('$baseUrl/getQuestionPaginator').replace(
+      final url = Uri.parse('$baseUrl/getQuestions2').replace(
         queryParameters: {
           'limit': '10',
           if (pageToken != null) 'pageToken': pageToken,

@@ -42,23 +42,31 @@ class _SegmentedQuestionViewState extends State<SegmentedQuestionView> {
   }
 
   void getQuestion() async {
+    debugPrint('SegmentedQuestionView: getQuestion() requested for category: "${widget.category.title}" (ID: ${widget.category.id})');
     if (_questionPaginator == null) {
       isLoading = true;
     } else {
       isPaginating = true;
     }
     if (_questionPaginator != null && _questionPaginator?.pageToken == null) {
+      debugPrint('SegmentedQuestionView: Reached the end of paginated questions (next pageToken is null).');
       reachEnd = true;
       return;
     }
     setState(() {});
 
+    debugPrint('SegmentedQuestionView: Calling getSegmentedQuestions API with categoryId: "${widget.category.id}" and pageToken: "${_questionPaginator?.pageToken}"');
     final (data, error) = await _questionRepo.getSegmentedQuestions(
-      categoryId: "",
+      categoryId: widget.category.id,
+      pageToken: _questionPaginator?.pageToken,
     );
 
     if (data != null) {
+      _questionPaginator = data;
       questionList.addAll(data.data);
+      debugPrint('SegmentedQuestionView: Successfully loaded ${data.data.length} questions. Total in list: ${questionList.length}. Next pageToken: "${data.pageToken}"');
+    } else {
+      debugPrint('SegmentedQuestionView: Failed to load questions. Error: ${error?.title ?? "Unknown error"}');
     }
 
     isLoading = false;

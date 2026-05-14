@@ -2,6 +2,7 @@ import 'package:chatter_matter_app/common/colors.dart';
 import 'package:chatter_matter_app/common/custom_text_style.dart';
 import 'package:chatter_matter_app/common/padding.dart';
 import 'package:chatter_matter_app/common/see_%20loading.dart';
+import 'package:chatter_matter_app/common/snack_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -14,6 +15,18 @@ class JournalView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final JournalProvider journalProvider = context.watch();
+
+    // Debug print the entire journal list
+    debugPrint(
+      'JournalView Build: Total journals = ${journalProvider.journalList.length}',
+    );
+    for (int i = 0; i < journalProvider.journalList.length; i++) {
+      final journal = journalProvider.journalList[i];
+      debugPrint(
+        '  [$i] Journal: ID = "${journal.id}", Question = "${journal.question}", Ans = "${journal.ans}"',
+      );
+    }
+
     return Column(
       children: [
         Text("My Journal", style: heading()),
@@ -49,11 +62,28 @@ class JournalView extends StatelessWidget {
                         final check = await showDeleteConfirmationDialog(
                           context,
                         );
-                        print(check);
+                        debugPrint(
+                          'JournalView: Delete confirmation dialog returned: $check',
+                        );
                         if (check == true) {
-                          await journalProvider.deleteJournal(
+                          final success = await journalProvider.deleteJournal(
                             journalId: journalProvider.journalList[index].id,
                           );
+                          if (context.mounted) {
+                            if (success == true) {
+                              showToast(
+                                context: context,
+                                title: "Journal deleted successfully",
+                                toastType: ToastType.success,
+                              );
+                            } else {
+                              showToast(
+                                context: context,
+                                title: "Failed to delete journal",
+                                toastType: ToastType.failed,
+                              );
+                            }
+                          }
                         }
                       },
                       question: journalProvider.journalList[index].question,

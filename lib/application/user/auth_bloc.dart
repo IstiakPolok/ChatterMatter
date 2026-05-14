@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../../core/api_handler.dart';
 import '../model/user_model.dart';
@@ -50,6 +51,9 @@ class UserBloc extends ChangeNotifier {
       final data = FirebaseAuth.instance.currentUser;
 
       profile = null;
+      if (data != null) {
+        await Purchases.logIn(data.uid);
+      }
       final check = await fetchProfile();
       if (data != null && check != null) {
         user = data;
@@ -80,6 +84,7 @@ class UserBloc extends ChangeNotifier {
     );
     if (data != null) {
       user = data;
+      await Purchases.logIn(data.uid);
       await fetchProfile();
     }
 
@@ -98,6 +103,7 @@ class UserBloc extends ChangeNotifier {
     );
     if (data != null) {
       user = data;
+      await Purchases.logIn(data.uid);
       await _authRepo.updateLastVisit();
       await fetchProfile();
     }
@@ -168,6 +174,7 @@ class UserBloc extends ChangeNotifier {
 
   Future<void> logout() async {
     await _authRepo.logout();
+    await Purchases.logOut();
     user = null;
     profile = null;
     notifyListeners();

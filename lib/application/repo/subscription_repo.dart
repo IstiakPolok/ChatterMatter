@@ -79,5 +79,36 @@ class SubscriptionRepo {
   //   ),
   // );
 
+  /// Update subscription in backend after RevenueCat purchase
+  Future<void> updateSubscriptionInBackend({
+    required String subscriptionId,
+    required String planDurationType,
+    String? transactionId,
+  }) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) throw Exception('User not logged in');
+
+    final token = await user.getIdToken(true);
+
+    final body = <String, dynamic>{
+      'subscriptionId': subscriptionId,
+      'planDurationType': planDurationType,
+      if (transactionId != null) 'transactionId': transactionId,
+    };
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/updateSubscription'),
+      body: jsonEncode(body),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    ).timeout(const Duration(seconds: 10));
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Backend sync failed: ${response.statusCode} ${response.body}');
+    }
+  }
+
   ///add journal
 }

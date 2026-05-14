@@ -1,4 +1,5 @@
 import 'package:chatter_matter_app/application/user/auth_bloc.dart';
+import 'package:chatter_matter_app/application/repo/subscription_repo.dart';
 import 'package:chatter_matter_app/common/padding.dart';
 import 'package:chatter_matter_app/core/enums.dart';
 import 'package:chatter_matter_app/providers/question_provider.dart';
@@ -99,16 +100,44 @@ Future<void> purchasePackage() async {
 
     debugPrint("PURCHASE ENTITLEMENTS: ${entitlements.all}");
 
-    if (entitlements.all['vip_plans']?.isActive == true) {
+    final identifier = selectedPackage!.storeProduct.identifier.toLowerCase();
+    String subTypeStr = 'free';
+
+    if (entitlements.all['vip_plans']?.isActive == true || identifier.contains('vip')) {
       debugPrint("VIP UNLOCKED");
       userBloc.updatesubscription(SubscriptionType.vip);
-
-    } else if (entitlements.all['standard_plans']?.isActive == true) {
+      subTypeStr = 'vip';
+    } else if (entitlements.all['standard_plans']?.isActive == true || identifier.contains('standard')) {
       debugPrint("STANDARD UNLOCKED");
       userBloc.updatesubscription(SubscriptionType.standard);
-
+      subTypeStr = 'standard';
     } else {
       userBloc.updatesubscription(SubscriptionType.free);
+      subTypeStr = 'free';
+    }
+
+    try {
+      final subRepo = SubscriptionRepo();
+      final durationType = selectedPackage!.packageType == PackageType.monthly ? "monthly" : "yearly";
+      final transactionId = "rc_${result.customerInfo.originalAppUserId}";
+
+      String subscriptionId;
+      if (subTypeStr == 'vip') {
+        subscriptionId = 'jE4ZzyOiYr5nOcbNgtn2';
+      } else if (subTypeStr == 'standard') {
+        subscriptionId = 'Tqwms4mpcskNYA1IogtV';
+      } else {
+        subscriptionId = 'ROjDdZqRU3dtqRPZeVK0';
+      }
+
+      await subRepo.updateSubscriptionInBackend(
+        subscriptionId: subscriptionId,
+        planDurationType: durationType,
+        transactionId: transactionId,
+      );
+      debugPrint("✅ Sent updateSubscription to backend for $subTypeStr");
+    } catch (e) {
+      debugPrint("❌ Error sending subscription to backend: $e");
     }
 
     await userBloc.fetchProfile(); // Ensure profile is updated from server

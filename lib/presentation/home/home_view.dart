@@ -37,8 +37,18 @@ class _HomeViewState extends State<HomeView> {
     call();
     WidgetsBinding.instance.addPostFrameCallback((_){
       syncSubscription();
+      
+      // Fetch fresh data from the API every time HomeView opens
+      final userBloc = context.read<UserBloc>();
+      final qProvider = context.read<QuestionProvider>();
+      final selectedCats = userBloc.profile?.selectedCategories;
+      
+      if (selectedCats != null && selectedCats.isNotEmpty) {
+        qProvider.resetWithCategory(selectedCats.first);
+      } else {
+        qProvider.resetPaginator();
+      }
     });
-    
   }
 
   void call() async {
