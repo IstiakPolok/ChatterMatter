@@ -188,33 +188,41 @@ class UserBloc extends ChangeNotifier {
     return (data, error);
   }
 
-  Future<Attempt<String>> updataSelectedCategory(String catsId) async {
-    // if (profile?.subscriptionType == SubscriptionType.standard) {
-    //   if (profile?.selectedCategories.length == 3 &&
-    //       !profile!.selectedCategories.contains(catsId)) {
-    //     return failed(
-    //       Failure(
-    //         title: "Category Length must be under 3. Please unselect one.",
-    //       ),
-    //     );
-    //   } else {
-    //     profile!.selectedCategories.add(catsId);
-    //   }
-    // }
+  Future<Attempt<String>> updateSelectedCategory(String catsId) async {
+    if (profile == null) return failed(Failure(title: "Profile not found"));
 
-    if (profile?.subscriptionType == SubscriptionType.vip) {
-      return success("Yuo are already a vip user You have all category access");
-    }
+    // Only one category may be selected at a time for all users.
+    final newSelectedCategories = [catsId];
 
-    // final (check)
-    final (check, error) = await dashboardRepo.updateSelectedCategory([catsId]);
-    if (check != null) {
-      profile?.selectedCategories = [catsId];
-      notifyListeners();
+    // Optimistic update: Update local profile immediately for instant UI response
+    profile?.selectedCategories = newSelectedCategories;
+    notifyListeners();
+
+    // Perform backend update in the background or await it without blocking UI refresh flow
+    final (check, error) =
+        await dashboardRepo.updateSelectedCategory(newSelectedCategories);
+    
+    if (check == null) {
+      // If backend fails, you could optionally revert here or log the error
+      debugPrint("Warning: Background category update failed: ${error?.title}");
     }
 
     return (check, error);
-    // final data=await
+  }
+
+  Future<Attempt<String>> clearSelectedCategories() async {
+    if (profile == null) return failed(Failure(title: "Profile not found"));
+
+    // Optimistic update
+    profile?.selectedCategories = [];
+    notifyListeners();
+
+    // Backend update
+    final (check, error) = await dashboardRepo.updateSelectedCategory([]);
+    if (check == null) {
+      debugPrint("Warning: Background category clear failed: ${error?.title}");
+    }
+    return (check, error);
   }
 
   Future<void> addFavQuestion(String id) async {

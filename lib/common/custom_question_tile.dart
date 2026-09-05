@@ -11,6 +11,8 @@ import 'colors.dart';
 import 'custom_input.dart';
 import 'custom_text_style.dart';
 import 'padding.dart';
+import '../presentation/setting/showcase_keys.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class CustomQuestionTile extends StatefulWidget {
   const CustomQuestionTile({
@@ -39,10 +41,11 @@ class _CustomQuestionTileState extends State<CustomQuestionTile> {
   final journalRepo = JournalRepo();
 
   void addJournal() async {
+    
     setState(() {
       isLoading = true;
     });
-    final check = await Provider.of<JournalProvider>(context, listen: false)
+    final (check, error) = await Provider.of<JournalProvider>(context, listen: false)
         .addJournal(
           ans: ans,
           question: widget.question.title,
@@ -59,7 +62,7 @@ class _CustomQuestionTileState extends State<CustomQuestionTile> {
     if (check == null && context.mounted) {
       showToast(
         context: context,
-        title: "Unable to add the journal",
+        title: error?.title ?? "Unable to add the journal",
         toastType: ToastType.failed,
       );
     }
@@ -82,15 +85,18 @@ class _CustomQuestionTileState extends State<CustomQuestionTile> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      // height: 400,
-      decoration: BoxDecoration(
-        color: widget.bg ?? Color(0xffC18DD9),
-        borderRadius: BorderRadius.circular(defaultRadius),
-      ),
+    return SizedBox(
+      height: 350,
+      width: double.infinity,
+      child: Container(
+        // height: 400,
+        decoration: BoxDecoration(
+          color: widget.bg ?? Color(0xffC18DD9),
+          borderRadius: BorderRadius.circular(defaultRadius),
+        ),
 
-      child: Stack(
-        children: [
+        child: Stack(
+          children: [
           Positioned(
             bottom: 0,
             right: 0,
@@ -162,70 +168,84 @@ class _CustomQuestionTileState extends State<CustomQuestionTile> {
                     maxLines: 4,
                   ),
 
-                  Row(
-                    spacing: 5,
-                    children: [
-                      Icon(
-                        Icons.menu_book_rounded,
-                        color: const Color(0xffE0E0E0),
-                      ),
-
-                      Text(
-                        "Your Thoughts",
-                        style: bodyLarge(color: const Color(0xffE0E0E0)),
-                      ),
-                    ],
-                  ),
-
-                  customInput(
-                    hintText: "Write Your Thoughts..",
-                    isEnable: !isLoading,
-                    initialValue: ans,
-                    onChange: (e) {
-                      ans = e;
-                    },
-                    fill: true,
-                    maxLine: 3,
-                  ),
-
-                  InkWell(
-                    enableFeedback: true,
-                    onTap: () => addJournal(),
-                    // onTap: journalProvider.addingHomeJournal
-                    //     ? null
-                    //     : () async {
-                    //         journalProvider.addJournal(
-                    //           question: "question",
-                    //           ans: ans,
-                    //           isHome: true,
-                    //         );
-                    //       },
-                    child: Container(
-                      height: 50,
-                      width: isLoading ? 150 : null,
-                      // alignment: Alignment.centerLeft,
-                      padding: EdgeInsets.symmetric(horizontal: defaultPadding),
-                      decoration: BoxDecoration(
-                        color: customLightPurple,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: isLoading
-                          ? Center(child: CircularProgressIndicator())
-                          : Row(
-                              mainAxisSize: MainAxisSize.min,
-                              spacing: 16,
-                              children: [
-                                Icon(
-                                  Icons.menu_book_rounded,
-                                  color: customWhite,
-                                ),
-
-                                Text(
-                                  "Save To Journal",
-                                  style: bodyLarge(color: customWhite),
-                                ),
-                              ],
+                  Showcase(
+                    key: ShowcaseKeys.saveJournalKey,
+                    title: "📓 Step 5 — Use the Journal",
+                    description: "Tap the Journal at the bottom to write thoughts separately (e.g. Mom: my answer, Child: their answer) and save.",
+                    tooltipBackgroundColor: const Color(0xFF8B6BBD),
+                    textColor: Colors.white,
+                    titleTextStyle: const TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                    ),
+                    descTextStyle: const TextStyle(
+                      fontFamily: 'Nunito Sans',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          spacing: 5,
+                          children: [
+                            const Icon(
+                              Icons.menu_book_rounded,
+                              color: Color(0xffE0E0E0),
                             ),
+                  
+                            Text(
+                              "Your Thoughts",
+                              style: bodyLarge(color: const Color(0xffE0E0E0)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        customInput(
+                          hintText: "Write Your Thoughts..",
+                          isEnable: !isLoading,
+                          initialValue: ans,
+                          onChange: (e) {
+                            ans = e;
+                          },
+                          fill: true,
+                          maxLine: 3,
+                        ),
+                        const SizedBox(height: 10),
+                        InkWell(
+                          enableFeedback: true,
+                          onTap: () => addJournal(),
+                          child: Container(
+                            height: 50,
+                            width: isLoading ? 150 : null,
+                            padding: EdgeInsets.symmetric(horizontal: defaultPadding),
+                            decoration: BoxDecoration(
+                              color: customLightPurple,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: isLoading
+                                ? const Center(child: CircularProgressIndicator())
+                                : Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    spacing: 16,
+                                    children: [
+                                      const Icon(
+                                        Icons.menu_book_rounded,
+                                        color: customWhite,
+                                      ),
+                  
+                                      Text(
+                                        "Save To Journal",
+                                        style: bodyLarge(color: customWhite),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -234,6 +254,7 @@ class _CustomQuestionTileState extends State<CustomQuestionTile> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

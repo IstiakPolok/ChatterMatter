@@ -8,6 +8,8 @@ import 'package:provider/provider.dart';
 
 import '../../common/common_dialouge.dart';
 import '../../providers/journal_provider.dart';
+import '../setting/showcase_keys.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class JournalView extends StatelessWidget {
   const JournalView({super.key});
@@ -29,7 +31,26 @@ class JournalView extends StatelessWidget {
 
     return Column(
       children: [
-        Text("My Journal", style: heading()),
+        Showcase(
+          key: ShowcaseKeys.journalPageKey,
+          title: "📓 Step 6 — Your Journal",
+          description: "All your saved journals will appear here.",
+          tooltipBackgroundColor: const Color(0xFF8B6BBD),
+          textColor: Colors.white,
+          titleTextStyle: const TextStyle(
+            fontFamily: 'Nunito',
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+          ),
+          descTextStyle: const TextStyle(
+            fontFamily: 'Nunito Sans',
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+          child: Text("My Journal", style: heading()),
+        ),
 
         Text(
           "Your conversation reflections",

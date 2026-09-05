@@ -15,19 +15,20 @@ class QuestionProvider extends ChangeNotifier {
   bool isPaginating = false;
   bool reachEnd = false;
 
-  /// The category ID currently being used to filter questions.
-  /// null means no category filter (general questions).
-  String? selectedCategoryId;
+  /// The category IDs currently being used to filter questions.
+  /// Empty list means no category filter (general questions).
+  List<String> selectedCategoryIds = [];
 
   final QuestionRepo _questionRepo = QuestionRepo();
 
   init() async {
-    getQuestion();
+    // Do not auto-load questions on init.
+    // Let HomeView decide whether to load based on selected categories.
   }
 
   /// Reset and reload questions without any category filter.
   Future<void> resetPaginator() async {
-    selectedCategoryId = null;
+    selectedCategoryIds = [];
     _questionPaginator = null;
     questionList = [];
     reachEnd = false;
@@ -35,10 +36,10 @@ class QuestionProvider extends ChangeNotifier {
     await getQuestion();
   }
 
-  /// Reset and reload questions filtered by [categoryId].
-  /// Pass null to clear the category filter and load general questions.
-  Future<void> resetWithCategory(String? categoryId) async {
-    selectedCategoryId = categoryId;
+  /// Reset and reload questions filtered by [categoryIds].
+  /// Pass an empty list to clear the category filter and load general questions.
+  Future<void> resetWithCategories(List<String> categoryIds) async {
+    selectedCategoryIds = categoryIds;
     _questionPaginator = null;
     questionList = [];
     reachEnd = false;
@@ -57,6 +58,8 @@ class QuestionProvider extends ChangeNotifier {
   }
 
   Future<void> getQuestion() async {
+    if (isLoading || isPaginating) return;
+
     if (_questionPaginator == null) {
       isLoading = true;
     } else {
@@ -71,36 +74,74 @@ class QuestionProvider extends ChangeNotifier {
     }
     notifyListeners();
 
-    final catId = selectedCategoryId;
+    final catIds = selectedCategoryIds;
 
-    if (catId != null && catId.isNotEmpty) {
-      // Fetch questions filtered by the selected category
-      final (data, error) = await _questionRepo.getSegmentedQuestions(
-        categoryId: catId,
+    if (catIds.isNotEmpty) {
+      debugPrint(
+        'QuestionProvider: Fetching questions for category IDs: $catIds',
+      );
+      final (data, error) = await _questionRepo.getQuestionsByCategory(
+        categoryId: catIds.join(','),
         pageToken: _questionPaginator?.pageToken,
       );
 
       if (data != null) {
+        final isFreshFetch = _questionPaginator == null;
         _questionPaginator = data;
+
+        if (isFreshFetch) {
+          questionList = [];
+          debugPrint(
+            'QuestionProvider: Fresh fetch, cleared existing question list.',
+          );
+        }
         questionList.addAll(data.data);
+
+        debugPrint('\n📊 API RESPONSE for Categories: $catIds');
+        debugPrint('📊 Total questions in response: ${data.data.length}');
+        debugPrint(
+          '📊 Question titles: ${data.data.map((q) => q.title).toList()}',
+        );
+        debugPrint('📊 Question IDs: ${data.data.map((q) => q.id).toList()}');
+        debugPrint('📊 Total questions loaded so far: ${questionList.length}');
+        debugPrint('📊 Next page token: ${data.pageToken}\n');
       }
 
       debugPrint(
-        'QuestionProvider: Loaded ${questionList.length} questions for category $catId. Error: $error',
+        'QuestionProvider: Successfully loaded ${data?.data.length ?? 0} questions for categories $catIds. Total: ${questionList.length}. Error: $error',
       );
     } else {
-      // No category selected — load general questions
+      debugPrint(
+        'QuestionProvider: Fetching general questions (no categories selected).',
+      );
       final (data, error) = await _questionRepo.getQuestionSet(
         pageToken: _questionPaginator?.pageToken,
       );
 
       if (data != null) {
+        final isFreshFetch = _questionPaginator == null;
         _questionPaginator = data;
+
+        if (isFreshFetch) {
+          questionList = [];
+          debugPrint(
+            'QuestionProvider: Fresh fetch, cleared existing question list.',
+          );
+        }
         questionList.addAll(data.data);
+
+        debugPrint('\n📊 API RESPONSE (General Questions)');
+        debugPrint('📊 Total questions in response: ${data.data.length}');
+        debugPrint(
+          '📊 Question titles: ${data.data.map((q) => q.title).toList()}',
+        );
+        debugPrint('📊 Question IDs: ${data.data.map((q) => q.id).toList()}');
+        debugPrint('📊 Total questions loaded so far: ${questionList.length}');
+        debugPrint('📊 Next page token: ${data.pageToken}\n');
       }
 
       debugPrint(
-        'QuestionProvider: Loaded ${questionList.length} general questions. Error: $error',
+        'QuestionProvider: Successfully loaded ${data?.data.length ?? 0} general questions. Total: ${questionList.length}. Error: $error',
       );
     }
 

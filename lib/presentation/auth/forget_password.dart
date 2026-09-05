@@ -2,11 +2,9 @@ import 'package:chatter_matter_app/common/colors.dart';
 import 'package:chatter_matter_app/common/custom_buttons.dart';
 import 'package:chatter_matter_app/common/custom_input.dart';
 import 'package:chatter_matter_app/common/custom_text_style.dart';
-import 'package:chatter_matter_app/common/navigator.dart';
 import 'package:chatter_matter_app/common/padding.dart';
 import 'package:chatter_matter_app/common/snack_bar.dart';
 import 'package:chatter_matter_app/common/validator.dart';
-import 'package:chatter_matter_app/presentation/auth/verify_otp_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -67,7 +65,7 @@ class _ForgetPasswordState extends State<ForgetPassword> {
                   child: primaryBackButton(context: context),
                 ),
                 vPad35,
-                Text("Forget Password", style: heading()),
+                Text("Forgot Password", style: heading()),
                 Text(
                   "Enter the required details",
                   style: bodyMedium(color: customGray),

@@ -60,13 +60,18 @@ class JournalRepo {
   ///add journal
   Future<Attempt<Journal>> addJournal(Journal data) async {
     try {
+      debugPrint('JournalRepo: addJournal called with data: ${jsonEncode(data.toJson())}');
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return failed(SessionExpired());
+      if (user == null) {
+        debugPrint('JournalRepo: addJournal failed - user is null');
+        return failed(SessionExpired());
+      }
 
       final token = await user.getIdToken(true);
-
       final url = Uri.parse("$baseUrl/addJournal");
 
+      debugPrint('JournalRepo: POST request to URL: $url');
+  
       final response = await http
           .post(
             url,
@@ -78,19 +83,36 @@ class JournalRepo {
           )
           .timeout(const Duration(seconds: 10)); // Prevents infinite waiting
 
+      debugPrint('JournalRepo: Response status code: ${response.statusCode}');
+      debugPrint('JournalRepo: Response body: ${response.body}');
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map && decoded.containsKey('error')) {
+        final errorMsg = decoded['error']?.toString() ?? "Something went wrong";
+        debugPrint('JournalRepo: API returned error message: $errorMsg');
+        return failed(Failure(title: errorMsg));
+      }
+
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return success(Journal.fromJson(jsonDecode(response.body)["data"]));
+        debugPrint('JournalRepo: addJournal success');
+        return success(Journal.fromJson(decoded["data"]));
       } else if (response.statusCode == 401) {
+        debugPrint('JournalRepo: addJournal failed - Session Expired (401)');
         return failed(SessionExpired());
       } else if (response.statusCode == 403) {
+        debugPrint('JournalRepo: addJournal failed - Unauthorized Access (403)');
         return failed(UnauthorizeAccess());
       }
+      debugPrint('JournalRepo: addJournal failed with status: ${response.statusCode}');
       return failed(Failure(title: "Something went wrong"));
     } on http.ClientException catch (e) {
+      debugPrint('JournalRepo: http.ClientException: ${e.message}');
       return failed(Failure(title: e.message));
     } on FormatException catch (e) {
+      debugPrint('JournalRepo: FormatException: ${e.message}');
       return failed(Failure(title: e.message));
     } on Exception catch (e) {
+      debugPrint('JournalRepo: Exception: ${e.toString()}');
       return failed(Failure(title: e.toString()));
     }
   }

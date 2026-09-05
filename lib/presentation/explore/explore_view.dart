@@ -4,7 +4,7 @@ import 'package:chatter_matter_app/common/colors.dart';
 import 'package:chatter_matter_app/common/custom_text_style.dart';
 import 'package:chatter_matter_app/common/padding.dart';
 import 'package:chatter_matter_app/common/snack_bar.dart';
-import 'package:chatter_matter_app/env.dart';
+import 'package:chatter_matter_app/providers/question_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/dashboard_provider.dart';
@@ -32,7 +32,20 @@ class _ExploreViewState extends State<ExploreView> {
     final (check, error) = await Provider.of<UserBloc>(
       context,
       listen: false,
-    ).updataSelectedCategory(categoryId);
+    ).updateSelectedCategory(categoryId);
+
+    if (check != null && mounted) {
+      final selectedCats =
+          Provider.of<UserBloc>(
+            context,
+            listen: false,
+          ).profile?.selectedCategories ??
+          [];
+      Provider.of<QuestionProvider>(
+        context,
+        listen: false,
+      ).resetWithCategories(selectedCats);
+    }
     if (!mounted) return;
     if (mounted && check != null && context.mounted) {
       showToast(context: context, title: check, toastType: ToastType.success);

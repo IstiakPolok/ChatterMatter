@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shorebird_code_push/shorebird_code_push.dart';
+import 'package:restart_app/restart_app.dart';
 
 import '../../application/user/auth_bloc.dart';
 import '../../common/gradiant_background.dart';
@@ -16,8 +18,28 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  bool _isDownloadingUpdate = false;
+  final _updater = ShorebirdUpdater();
+
   void checkUserState() async {
-    Future.delayed(Duration(seconds: 1)).then((e) async {
+    // Check for Shorebird updates first
+    try {
+      final status = await _updater.checkForUpdate();
+      if (status == UpdateStatus.outdated) {
+        if (mounted) {
+          setState(() {
+            _isDownloadingUpdate = true;
+          });
+        }
+        await _updater.update();
+        await Restart.restartApp();
+        return; // Stop navigation, wait for restart
+      }
+    } catch (e) {
+      debugPrint('Shorebird update check failed: $e');
+    }
+
+    Future.delayed(const Duration(seconds: 1)).then((e) async {
       if (!mounted) return;
 
       final check = await Provider.of<UserBloc>(
@@ -25,9 +47,9 @@ class _SplashScreenState extends State<SplashScreen> {
         listen: false,
       ).retrieveUser();
       if (check && mounted) {
-        animatedNavigateReplaceAll(context, LandingView());
+        animatedNavigateReplaceAll(context, const LandingView());
       } else if (check == false && mounted) {
-        animatedNavigateReplaceAll(context, StartScreen());
+        animatedNavigateReplaceAll(context, const StartScreen());
       }
     });
   }
@@ -53,10 +75,22 @@ class _SplashScreenState extends State<SplashScreen> {
               left: 0,
               right: 0,
               child: Center(
-                child: SizedBox(
-                  height: 30,
-                  width: 30,
-                  child: CircularProgressIndicator(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_isDownloadingUpdate) ...[
+                      const Text(
+                        'Downloading Update...',
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    const SizedBox(
+                      height: 30,
+                      width: 30,
+                      child: CircularProgressIndicator(color: Colors.white),
+                    ),
+                  ],
                 ),
               ),
             ),

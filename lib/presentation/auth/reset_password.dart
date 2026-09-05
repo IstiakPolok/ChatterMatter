@@ -1,3 +1,5 @@
+// ignore_for_file: override_on_non_overriding_member
+
 import 'package:chatter_matter_app/presentation/auth/login_view.dart';
 import 'package:flutter/material.dart';
 
@@ -38,7 +40,7 @@ class _ResetPasswordState extends State<ResetPassword> {
                 child: primaryBackButton(context: context),
               ),
               vPad35,
-              Text("Forget Password", style: heading()),
+              Text("Forgot Password", style: heading()),
               Text(
                 "Enter the required details",
                 style: bodyMedium(color: customGray),

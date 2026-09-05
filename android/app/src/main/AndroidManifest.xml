@@ -10,7 +10,7 @@
         android:usesCleartextTraffic="true"
 
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launcher_icon">
              <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-5937945188391331~5335808180"/>

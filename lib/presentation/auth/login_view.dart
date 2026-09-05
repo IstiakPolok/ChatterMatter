@@ -1,4 +1,4 @@
-import 'dart:async';
+
 import 'dart:io';
 
 import 'package:chatter_matter_app/common/colors.dart';
@@ -157,7 +157,7 @@ class _LoginViewState extends State<LoginView> {
                       Text("Login", style: heading()),
                       vPad5,
                       Text(
-                        "Chatter Matters by Veenu Inspired",
+                        "Chatter Matters by Veenu Inspires",
                         style: bodyMedium(color: customLightGray),
                       ),
                       vPad35,
@@ -190,7 +190,7 @@ class _LoginViewState extends State<LoginView> {
                           onPressed: () =>
                               animatedNavigateTo(context, ForgetPassword()),
                           child: Text(
-                            "Forget Password ?",
+                            "Forgot Password?",
                             style: bodyMedium(color: customGray),
                           ),
                         ),
@@ -238,7 +238,7 @@ class _LoginViewState extends State<LoginView> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         // spacing: 4,
                         children: [
-                          Text("Don’t have any account ?"),
+                          Text("Don’t have any account?"),
                           TextButton(
                             onPressed: () {
                               animatedNavigateReplace(context, RegisterView());

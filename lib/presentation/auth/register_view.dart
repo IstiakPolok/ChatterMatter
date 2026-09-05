@@ -1,3 +1,5 @@
+// ignore_for_file: override_on_non_overriding_member
+
 import 'package:chatter_matter_app/presentation/auth/login_view.dart';
 import 'package:chatter_matter_app/presentation/landing/landing_view.dart';
 import 'package:flutter/material.dart';
@@ -82,7 +84,7 @@ class _RegisterViewState extends State<RegisterView> {
                 Text("Sign Up", style: heading()),
                 vPad5,
                 Text(
-                  "Chatter Matters by Veenu Inspired",
+                  "Chatter Matters by Veenu Inspires",
                   style: bodyMedium(color: customLightGray),
                 ),
                 vPad35,
@@ -126,8 +128,8 @@ class _RegisterViewState extends State<RegisterView> {
                 ),
                 vPad15,
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   spacing: 2,
                   children: [
                     Checkbox(value: true, onChanged: (e) {}),
@@ -162,7 +164,7 @@ class _RegisterViewState extends State<RegisterView> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   // spacing: 4,
                   children: [
-                    Text("Already have any account ?"),
+                    Text("Already have any account?"),
                     TextButton(
                       onPressed: () {
                         animatedNavigateReplace(context, LoginView());

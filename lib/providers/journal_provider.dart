@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../application/model/journal_model.dart';
 import '../application/repo/journal_repo.dart';
+import '../core/api_handler.dart';
 
 class JournalProvider extends ChangeNotifier {
   JournalProvider() {
@@ -55,7 +56,7 @@ class JournalProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<Journal?> addJournal({
+  Future<Attempt<Journal>> addJournal({
     bool isHome = false,
     required String question,
     required String questionId,
@@ -87,7 +88,7 @@ class JournalProvider extends ChangeNotifier {
     addingJournal = false;
     addingHomeJournal = false;
     notifyListeners();
-    return data;
+    return (data, error);
   }
 
   Future<bool?> deleteJournal({required String journalId}) async {

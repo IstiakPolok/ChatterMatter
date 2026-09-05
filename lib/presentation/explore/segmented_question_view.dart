@@ -26,6 +26,7 @@ class _SegmentedQuestionViewState extends State<SegmentedQuestionView> {
   bool isLoading = false;
   bool isPaginating = false;
   bool reachEnd = false;
+  bool _isFetching = false;
 
   final QuestionRepo _questionRepo = QuestionRepo();
 
@@ -42,35 +43,61 @@ class _SegmentedQuestionViewState extends State<SegmentedQuestionView> {
   }
 
   void getQuestion() async {
-    debugPrint('SegmentedQuestionView: getQuestion() requested for category: "${widget.category.title}" (ID: ${widget.category.id})');
+    debugPrint(
+      'SegmentedQuestionView: getQuestion() requested for category: "${widget.category.title}" (ID: ${widget.category.id})',
+    );
+    if (_isFetching) return;
+
     if (_questionPaginator == null) {
       isLoading = true;
     } else {
       isPaginating = true;
     }
+    _isFetching = true;
     if (_questionPaginator != null && _questionPaginator?.pageToken == null) {
-      debugPrint('SegmentedQuestionView: Reached the end of paginated questions (next pageToken is null).');
+      debugPrint(
+        'SegmentedQuestionView: Reached the end of paginated questions (next pageToken is null).',
+      );
       reachEnd = true;
       return;
     }
     setState(() {});
 
-    debugPrint('SegmentedQuestionView: Calling getSegmentedQuestions API with categoryId: "${widget.category.id}" and pageToken: "${_questionPaginator?.pageToken}"');
-    final (data, error) = await _questionRepo.getSegmentedQuestions(
+    debugPrint(
+      'SegmentedQuestionView: Calling getQuestionsByCategory API with categoryId: "${widget.category.id}" and pageToken: "${_questionPaginator?.pageToken}"',
+    );
+    final (data, error) = await _questionRepo.getQuestionsByCategory(
       categoryId: widget.category.id,
       pageToken: _questionPaginator?.pageToken,
     );
 
     if (data != null) {
+      // If it's a fresh fetch (first page), ensure the list is clean
+      if (_questionPaginator == null) {
+        questionList = [];
+        debugPrint(
+          'SegmentedQuestionView: Fresh fetch, cleared existing question list.',
+        );
+      }
+
       _questionPaginator = data;
       questionList.addAll(data.data);
-      debugPrint('SegmentedQuestionView: Successfully loaded ${data.data.length} questions. Total in list: ${questionList.length}. Next pageToken: "${data.pageToken}"');
+
+      debugPrint(
+        'SegmentedQuestionView: API Response Data: ${data.data.map((q) => q.title).toList()}',
+      );
+      debugPrint(
+        'SegmentedQuestionView: Successfully loaded ${data.data.length} questions. Total in list: ${questionList.length}. Next pageToken: "${data.pageToken}"',
+      );
     } else {
-      debugPrint('SegmentedQuestionView: Failed to load questions. Error: ${error?.title ?? "Unknown error"}');
+      debugPrint(
+        'SegmentedQuestionView: Failed to load questions. Error: ${error?.title ?? "Unknown error"}',
+      );
     }
 
     isLoading = false;
     isPaginating = false;
+    _isFetching = false;
     setState(() {});
   }
 
@@ -127,28 +154,46 @@ class _SegmentedQuestionViewState extends State<SegmentedQuestionView> {
               ],
             ),
             vPad10,
-            CarouselSlider(
-              items: List.generate(
-                questionList.length,
-                (i) => CustomQuestionTile(
-                  isFavorite: true,
-                  onTapFav: () {},
-                  index: i,
-                  question: questionList[i],
-                  bg: config!.backgroundColor,
-                  bgImage: config!.backgroundImage,
-                ),
-              ),
-              options: CarouselOptions(
-                aspectRatio: 1,
-                height: 400,
-                viewportFraction: .95,
-                enlargeCenterPage: true,
-                onPageChanged: (index, reason) {
-                  onPageChange(index);
-                },
-              ),
-            ),
+            // Show a single tile when only one question, otherwise a carousel
+            questionList.isEmpty
+                ? const SizedBox()
+                : questionList.length == 1
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: SizedBox(
+                          height: 350,
+                          child: CustomQuestionTile(
+                            isFavorite: true,
+                            onTapFav: () {},
+                            index: 0,
+                            question: questionList[0],
+                            bg: config!.backgroundColor,
+                            bgImage: config!.backgroundImage,
+                          ),
+                        ),
+                      )
+                    : CarouselSlider(
+                        items: List.generate(
+                          questionList.length,
+                          (i) => CustomQuestionTile(
+                            isFavorite: true,
+                            onTapFav: () {},
+                            index: i,
+                            question: questionList[i],
+                            bg: config!.backgroundColor,
+                            bgImage: config!.backgroundImage,
+                          ),
+                        ),
+                        options: CarouselOptions(
+                          aspectRatio: 1,
+                          height: 400,
+                          viewportFraction: .95,
+                          enlargeCenterPage: true,
+                          onPageChanged: (index, reason) {
+                            onPageChange(index);
+                          },
+                        ),
+                      ),
           ],
         ),
       ),

@@ -51,20 +51,20 @@ customTile({required Category category, required bool isSelected}) {
                   ),
                 ),
                 vPad20,
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: defaultPadding,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(defaultPadding),
-                    color: customWhite,
-                  ),
-                  child: Text(
-                    category.questionCount.toString(),
-                    style: bodyMedium(color: customDarkPurple),
-                  ),
-                ),
+                // Container(
+                //   padding: EdgeInsets.symmetric(
+                //     horizontal: defaultPadding,
+                //     vertical: 8,
+                //   ),
+                //   decoration: BoxDecoration(
+                //     borderRadius: BorderRadius.circular(defaultPadding),
+                //     color: customWhite,
+                //   ),
+                //   child: Text(
+                //     category.questionCount.toString(),
+                //     style: bodyMedium(color: customDarkPurple),
+                //   ),
+                // ),
               ],
             ),
           ),

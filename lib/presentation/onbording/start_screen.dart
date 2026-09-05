@@ -33,7 +33,7 @@ class StartScreen extends StatelessWidget {
                     children: [
                       SvgPicture.asset("assets/icons/startingIcon.svg"),
                       Text(
-                        "Chater mater",
+                        "Chatter Matters",
                         style: bodyLarge(color: customLightPurple),
                       ),
                     ],
@@ -53,12 +53,12 @@ class StartScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      "Stay More !",
+                      "Say More!",
                       style: headingLarge(color: customLightPurple),
                     ),
                     vPad10,
                     Text(
-                      "Simple question, deeper Connections",
+                      "Simple question, deeper connections",
                       style: bodyLarge(color: customLightGray),
                     ),
                     vPad35,

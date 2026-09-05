@@ -6,13 +6,19 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 BannerAd myBanner = BannerAd(
   adUnitId: Platform.isAndroid
       ? 'ca-app-pub-3940256099942544/6300978111'
-      : "ca-app-pub-3940256099942544/2934735716", // your banner ad unit ID
+      : "ca-app-pub-8703469882760831/3998217612", // your banner ad unit ID
   size: AdSize.largeBanner,
   request: AdRequest(),
   listener: BannerAdListener(
-    onAdLoaded: (_) => print('Banner loaded'),
+    onAdLoaded: (ad) {
+      print('Banner loaded successfully: ${ad.responseInfo}');
+    },
     onAdFailedToLoad: (ad, error) {
-      print('Failed to load banner: $error');
+      print('Failed to load banner:');
+      print('  Error code: ${error.code}');
+      print('  Error message: ${error.message}');
+      print('  Error domain: ${error.domain}');
+      print('  Response info: ${error.responseInfo}');
       ad.dispose();
     },
   ),

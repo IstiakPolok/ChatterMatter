@@ -18,10 +18,14 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../../application/adds/add.dart';
 
+import 'package:chatter_matter_app/application/model/category_model.dart'
+    as category_model;
+import 'package:chatter_matter_app/providers/dashboard_provider.dart';
 import '../../common/custom_question_tile.dart';
 import '../../providers/question_provider.dart';
 import '../notification/notification_view.dart';
-
+import '../setting/showcase_keys.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -35,18 +39,18 @@ class _HomeViewState extends State<HomeView> {
   void initState() {
     super.initState();
     call();
-    WidgetsBinding.instance.addPostFrameCallback((_){
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       syncSubscription();
-      
+
       // Fetch fresh data from the API every time HomeView opens
       final userBloc = context.read<UserBloc>();
       final qProvider = context.read<QuestionProvider>();
-      final selectedCats = userBloc.profile?.selectedCategories;
-      
-      if (selectedCats != null && selectedCats.isNotEmpty) {
-        qProvider.resetWithCategory(selectedCats.first);
-      } else {
-        qProvider.resetPaginator();
+      final selectedCats = userBloc.profile?.selectedCategories ?? [];
+
+      // Only load questions if a category is selected.
+      // If no category is selected, show "Please select a category" message.
+      if (selectedCats.isNotEmpty) {
+        qProvider.resetWithCategories(selectedCats);
       }
     });
   }
@@ -56,42 +60,53 @@ class _HomeViewState extends State<HomeView> {
   }
 
   /// ✅ NEW: Sync subscription from RevenueCat
- Future<void> syncSubscription() async {
-  try {
-    final info = await Purchases.getCustomerInfo();
+  Future<void> syncSubscription() async {
+    try {
+      final info = await Purchases.getCustomerInfo();
 
-    final userBloc = context.read<UserBloc>();
-    final questionProvider = context.read<QuestionProvider>();
+      final userBloc = context.read<UserBloc>();
+      final questionProvider = context.read<QuestionProvider>();
 
-    debugPrint("ALL ENTITLEMENTS: ${info.entitlements.all}");
-    debugPrint("ACTIVE ENTITLEMENTS: ${info.entitlements.active}");
+      debugPrint(
+        "REVENUECAT ALL ENTITLEMENTS: ${info.entitlements.all.keys.toList()}",
+      );
+      debugPrint(
+        "REVENUECAT ACTIVE ENTITLEMENTS: ${info.entitlements.active.keys.toList()}",
+      );
 
-    if (info.entitlements.all['vip_plans']?.isActive == true) {
-      userBloc.updatesubscription(SubscriptionType.vip);
-      await questionProvider.ensureMinimumQuestions(20);
+      final isVipActive = info.entitlements.all['vip_plans']?.isActive == true;
+      final isStandardActive =
+          info.entitlements.all['standard_plans']?.isActive == true;
 
-    } else if (info.entitlements.all['standard_plans']?.isActive == true) {
-      userBloc.updatesubscription(SubscriptionType.standard);
-      await questionProvider.ensureMinimumQuestions(10);
-
-    } else {
-      userBloc.updatesubscription(SubscriptionType.free);
-      if (questionProvider.questionList.length < 2) {
-        await questionProvider.ensureMinimumQuestions(2);
+      if (isVipActive) {
+        userBloc.updatesubscription(SubscriptionType.vip);
+      } else if (isStandardActive) {
+        // Prevent downgrading to standard if the profile already shows VIP
+        if (userBloc.profile?.subscriptionType != SubscriptionType.vip) {
+          userBloc.updatesubscription(SubscriptionType.standard);
+        } else {
+          debugPrint(
+            "Sync: User is already VIP in profile, skipping downgrade to Standard.",
+          );
+        }
+      } else {
+        userBloc.updatesubscription(SubscriptionType.free);
       }
+    } catch (e) {
+      debugPrint("Sync error: $e");
     }
-
-  } catch (e) {
-    debugPrint("Sync error: $e");
   }
-}
 
   @override
   Widget build(BuildContext context) {
     final QuestionProvider questionProvider = context.watch();
     final UserBloc userBloc = context.watch();
-    final favList = userBloc.profile?.favoriteQuestionIds ?? [];
+    final DashboardProvider dashboardProvider = context.watch();
     final profile = userBloc.profile;
+    final favList = profile?.favoriteQuestionIds ?? [];
+    final selectedCategories = profile?.selectedCategories ?? [];
+    final categoryList = dashboardProvider.categoryList;
+    final showSelectCategoryPrompt = selectedCategories.isEmpty;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -109,40 +124,91 @@ class _HomeViewState extends State<HomeView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Good morning",
-                          style: bodyMedium(fontWeight: FontWeight.w500)),
-                      Row(
+                      Text(
+                        "Good morning",
+                        style: bodyMedium(fontWeight: FontWeight.w500),
+                      ),
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 4,
                         children: [
-                          Text(profile?.name ?? "",
-                              style: titleLarge(color: customBlack)),
-                          Image.asset("assets/icons/hi.png"),
+                          Text(
+                            profile?.name ?? "",
+                            style: titleLarge(color: customBlack),
+                          ),
+                          Image.asset("assets/icons/hi.png", height: 24),
+                          _buildSubscriptionBadge(profile?.subscriptionType),
                         ],
                       ),
-                      const SizedBox(height: 6),
-                 
+                      if (profile?.subscriptionType == SubscriptionType.free)
+                        GestureDetector(
+                          onTap: () => animatedNavigateTo(
+                            context,
+                            const SubscriptionView1(),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Text(
+                              "Upgrade to unlock all features",
+                              style: bodySmall(
+                                color: customLightPurple,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
 
                 InkWell(
-                  onTap: () =>
-                      animatedNavigateTo(context, NotificationView()),
+                  onTap: () => animatedNavigateTo(context, NotificationView()),
                   child: Container(
                     height: 40,
                     width: 40,
                     decoration: BoxDecoration(
-                      color: Color(0xffF8F8F8),
+                      color: const Color(0xffF8F8F8),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(Icons.notifications,
-                        color: customLightPurple),
+                    child: const Icon(
+                      Icons.notifications,
+                      color: customLightPurple,
+                    ),
                   ),
                 ),
               ],
             ),
 
+            vPad20,
 
-  vPad20,
+            /// QUICK CATEGORY SELECTOR
+            Showcase(
+              key: ShowcaseKeys.categoriesKey,
+              title: "🗂️ Step 4 — Explore Categories",
+              description:
+                  "Browse the 10 categories. Pick one that feels right and tap to see your question.",
+              tooltipBackgroundColor: const Color(0xFF8B6BBD),
+              textColor: Colors.white,
+              titleTextStyle: const TextStyle(
+                fontFamily: 'Nunito',
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+              ),
+              descTextStyle: const TextStyle(
+                fontFamily: 'Nunito Sans',
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+              child: _buildQuickCategorySelector(
+                categoryList,
+                selectedCategories,
+              ),
+            ),
+
+            vPad20,
 
             /// QUESTION OF THE DAY
             Row(
@@ -180,9 +246,11 @@ class _HomeViewState extends State<HomeView> {
                         Text(
                           (() {
                             final length = questionProvider.questionList.length;
-                            if (profile?.subscriptionType.name == SubscriptionType.vip.name) {
+                            if (profile?.subscriptionType.name ==
+                                SubscriptionType.vip.name) {
                               return length.toString();
-                            } else if (profile?.subscriptionType.name == SubscriptionType.standard.name) {
+                            } else if (profile?.subscriptionType.name ==
+                                SubscriptionType.standard.name) {
                               return (length > 10 ? 10 : length).toString();
                             } else {
                               return (length > 1 ? 1 : length).toString();
@@ -190,16 +258,20 @@ class _HomeViewState extends State<HomeView> {
                           })(),
                           style: bodyLarge(color: customLightPurple),
                         ),
-                        Text((() {
-                          final length = questionProvider.questionList.length;
-                          if (profile?.subscriptionType.name == SubscriptionType.vip.name) {
-                            return "/ $length";
-                          } else if (profile?.subscriptionType.name == SubscriptionType.standard.name) {
-                            return "/ 10";
-                          } else {
-                            return "/ 1";
-                          }
-                        })()),
+                        Text(
+                          (() {
+                            final length = questionProvider.questionList.length;
+                            if (profile?.subscriptionType.name ==
+                                SubscriptionType.vip.name) {
+                              return "/ $length";
+                            } else if (profile?.subscriptionType.name ==
+                                SubscriptionType.standard.name) {
+                              return "/ 10";
+                            } else {
+                              return "/ 1";
+                            }
+                          })(),
+                        ),
                       ],
                     ),
                   ),
@@ -207,10 +279,8 @@ class _HomeViewState extends State<HomeView> {
             ),
             vPad20,
 
-
             /// VIP CARD
-           
-if (profile?.subscriptionType.name !=SubscriptionType.vip.name)
+            if (profile?.subscriptionType.name != SubscriptionType.vip.name)
               Card(
                 color: customWhite,
                 elevation: 2,
@@ -220,7 +290,10 @@ if (profile?.subscriptionType.name !=SubscriptionType.vip.name)
                     MaterialPageRoute(builder: (_) => SubscriptionView1()),
                   ),
                   title: Text(
-                    profile?.subscriptionType.name ==SubscriptionType.standard.name ? "Upgrade to VIP" : "Unlock VIP Access",
+                    profile?.subscriptionType.name ==
+                            SubscriptionType.standard.name
+                        ? "Upgrade to VIP"
+                        : "Unlock VIP Access",
                   ),
                   subtitle: Text("Unlimited questions • No ads"),
                   leading: Image.asset("assets/icons/vip.png"),
@@ -238,84 +311,98 @@ if (profile?.subscriptionType.name !=SubscriptionType.vip.name)
                 ),
               ),
 
-          
-
             vPad20,
 
             /// SLIDER
             SizedBox(
-              child: questionProvider.isLoading
+              child: showSelectCategoryPrompt
+                  ? SizedBox(
+                      height: 350,
+                      child: Center(
+                        child: Text(
+                          "Please select a category.",
+                          style: bodyMedium(
+                            color: customLightPurple,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    )
+                  : questionProvider.isLoading
                   ? SizedBox(height: 350, child: cLoading())
                   : questionProvider.questionList.isEmpty
-                      ? SizedBox(
-                          height: 350,
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  "No questions available at the moment. Please try again later.",
-                                  style: bodyMedium(),
-                                  textAlign: TextAlign.center,
-                                ),
-                                vPad20,
-                                ElevatedButton(
-                                  onPressed: () => questionProvider.resetPaginator(),
-                                  child: Text("Retry"),
-                                ),
-                              ],
+                  ? SizedBox(
+                      height: 350,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "No questions available at the moment. Please try again later.",
+                              style: bodyMedium(),
+                              textAlign: TextAlign.center,
                             ),
-                          ),
-                        )
-                      : CarouselSlider(
-                          items: (() {
-                            List<Question> questionsToShow;
-
-                            if (profile?.subscriptionType.name ==
-                                SubscriptionType.vip.name) {
-                              questionsToShow =
-                                  questionProvider.questionList;
-                            } else if (profile?.subscriptionType.name ==
-                                SubscriptionType.standard.name) {
-                              questionsToShow = questionProvider
-                                  .questionList
-                                  .take(10)
-                                  .toList();
-                            } else {
-                              questionsToShow = questionProvider
-                                  .questionList
-                                  .take(1)
-                                  .toList();
-                            }
-
-                            return List.generate(
-                              questionsToShow.length,
-                              (i) => CustomQuestionTile(
-                                index: i,
-                                question: questionsToShow[i],
-                                isFavorite: favList.contains(
-                                  questionsToShow[i].id,
-                                ),
-                                onTapFav: () async => userBloc.addFavQuestion(
-                                  questionsToShow[i].id,
-                                ),
-                              ),
-                            );
-                          })(),
-                          options: CarouselOptions(
-                            height: 350,
-                            viewportFraction: 1,
-                            enlargeCenterPage: true,
-                            onPageChanged: (ind, e) {
-                              if (profile?.subscriptionType.name ==
-                                      SubscriptionType.vip.name &&
-                                  questionProvider.questionList.length - 2 <
-                                      ind) {
-                                questionProvider.getQuestion();
-                              }
-                            },
-                          ),
+                            vPad20,
+                            ElevatedButton(
+                              onPressed: () =>
+                                  questionProvider.resetPaginator(),
+                              child: Text("Retry"),
+                            ),
+                          ],
                         ),
+                      ),
+                    )
+                  : questionProvider.questionList.length == 1
+                  ? SizedBox(
+                      height: 350,
+                      child: CustomQuestionTile(
+                        index: 0,
+                        question: questionProvider.questionList[0],
+                        isFavorite: favList.contains(
+                          questionProvider.questionList[0].id,
+                        ),
+                        onTapFav: () async => userBloc.addFavQuestion(
+                          questionProvider.questionList[0].id,
+                        ),
+                      ),
+                    )
+                  : CarouselSlider(
+                      items: (() {
+                        final questionsToShow = questionProvider.questionList;
+
+                        return List.generate(
+                          questionsToShow.length,
+                          (i) => CustomQuestionTile(
+                            index: i,
+                            question: questionsToShow[i],
+                            isFavorite: favList.contains(questionsToShow[i].id),
+                            onTapFav: () async =>
+                                userBloc.addFavQuestion(questionsToShow[i].id),
+                          ),
+                        );
+                      })(),
+                      options: CarouselOptions(
+                        height: 350,
+                        viewportFraction: 1,
+                        enlargeCenterPage: true,
+                        onPageChanged: (ind, e) {
+                          final isVip =
+                              profile?.subscriptionType.name ==
+                              SubscriptionType.vip.name;
+                          final isCategorySelected =
+                              selectedCategories.isNotEmpty;
+
+                          // For category-selected flows, keep the first 10 questions
+                          // and do not auto-load the next page immediately.
+                          if (isVip &&
+                              !isCategorySelected &&
+                              questionProvider.questionList.length - 2 < ind) {
+                            questionProvider.getQuestion();
+                          }
+                        },
+                      ),
+                    ),
             ),
 
             vPad20,
@@ -349,12 +436,10 @@ if (profile?.subscriptionType.name !=SubscriptionType.vip.name)
             //     ],
             //   ),
             // ),
-
             vPad20,
 
             /// ADS
-            if (profile?.subscriptionType.name ==
-                SubscriptionType.free.name)
+            if (profile?.subscriptionType.name == SubscriptionType.free.name)
               Container(
                 alignment: Alignment.center,
                 width: myBanner.size.width.toDouble(),
@@ -368,7 +453,185 @@ if (profile?.subscriptionType.name !=SubscriptionType.vip.name)
       ),
     );
   }
+
+  Widget _buildQuickCategorySelector(
+    List<category_model.Category> categories,
+    List<String> selectedIds,
+  ) {
+    if (categories.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: Text("Categories", style: titleSmall()),
+        ),
+        SizedBox(
+          height: 45,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: categories.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              final category = categories[index];
+              final isSelected = selectedIds.contains(category.id);
+              return _buildCategoryChip(
+                title: category.title,
+                isSelected: isSelected,
+                onTap: () {
+                  debugPrint(
+                    'Category tapped: ${category.title} (id=${category.id})',
+                  );
+                  _handleCategoryToggle(category.id);
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryChip({
+    required String title,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? customLightPurple : customWhite,
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(
+            color: isSelected ? customLightPurple : customLightGray,
+            width: 1.5,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: customLightPurple.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Center(
+          child: Text(
+            title,
+            style: bodyMedium(
+              color: isSelected ? customWhite : customDarkGray,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _handleCategoryToggle(String categoryId) async {
+    final userBloc = context.read<UserBloc>();
+    final qProvider = context.read<QuestionProvider>();
+
+    debugPrint('\n=== CATEGORY CLICKED ===');
+    debugPrint('Category ID: $categoryId');
+
+    if (categoryId.isEmpty) {
+      // "All" selected: Clear categories in AuthBloc and reset questions
+      debugPrint('Clearing all categories');
+      userBloc.clearSelectedCategories();
+      await qProvider.resetPaginator();
+      debugPrint('=== END CATEGORY TOGGLE ===\n');
+      return;
+    }
+
+    // Toggle via AuthBloc logic (Optimistic/Parallel)
+    userBloc.updateSelectedCategory(categoryId);
+    debugPrint('Updated selected category in UserBloc');
+
+    // Refresh questions immediately
+    final updatedSelected = userBloc.profile?.selectedCategories ?? [];
+    debugPrint('Current selected categories: $updatedSelected');
+    if (updatedSelected.isNotEmpty) {
+      debugPrint('Fetching questions for categories: $updatedSelected');
+      await qProvider.resetWithCategories(updatedSelected);
+    } else {
+      debugPrint('No categories selected, fetching general questions');
+      await qProvider.resetPaginator();
+    }
+    debugPrint(
+      'Questions loaded. Total count: ${qProvider.questionList.length}',
+    );
+    debugPrint('=== END CATEGORY TOGGLE ===\n');
+  }
+
+  Widget _buildSubscriptionBadge(SubscriptionType? type) {
+    Color bgColor;
+    Color textColor;
+    String label;
+    IconData? icon;
+
+    switch (type) {
+      case SubscriptionType.vip:
+        bgColor = customDarkPurple;
+        textColor = Colors.white;
+        label = "VIP";
+        icon = Icons.stars_rounded;
+        break;
+      case SubscriptionType.standard:
+        bgColor = customLightPurple.withOpacity(0.2);
+        textColor = customDarkPurple;
+        label = "Standard";
+        icon = Icons.verified_user_rounded;
+        break;
+      case SubscriptionType.free:
+      default:
+        bgColor = Colors.grey.shade200;
+        textColor = Colors.grey.shade700;
+        label = "Free";
+        icon = null;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+        border: type == SubscriptionType.vip
+            ? Border.all(color: Colors.amber.shade300, width: 1)
+            : null,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(
+              icon,
+              size: 14,
+              color: type == SubscriptionType.vip
+                  ? Colors.amber.shade300
+                  : textColor,
+            ),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
+
 // utils ....
 class Utils {
   static void showSheet(
@@ -383,6 +646,7 @@ class Utils {
     );
   }
 }
+
 // purchase api ....
 class PurchasesApi {
   static const _apikey = 'appl_JBhiRCOzUslyWXGrYYJrvXtNWzq';
@@ -469,8 +733,10 @@ class _PaywallWidgetState extends State<PaywallWidget> {
           ),
 
           // Title
-          Text(widget.title,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(
+            widget.title,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
 
           const SizedBox(height: 8),
 
@@ -525,6 +791,3 @@ class _PaywallWidgetState extends State<PaywallWidget> {
     );
   }
 }
-
-
-
